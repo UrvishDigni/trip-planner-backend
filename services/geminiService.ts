@@ -22,10 +22,18 @@ const modeDescriptions: Record<string, string> = {
 };
 
 const modeBudgetRanges: Record<string, string> = {
-  cheap: "$50-100/day",
-  balanced: "$150-300/day",
-  premium: "$500+/day",
+  cheap: "₹800-1500/day per person",
+  balanced: "₹2000-4000/day per person",
+  premium: "₹8000+/day per person",
 };
+
+// Island and special destinations that require flight/ship access
+const ISLAND_DESTINATIONS = ["andaman", "nicobar", "lakshadweep"];
+
+function isIslandDestination(location: string): boolean {
+  const loc = location.toLowerCase();
+  return ISLAND_DESTINATIONS.some((island) => loc.includes(island));
+}
 
 export async function generateTripPlan({
   from,
@@ -46,6 +54,20 @@ Trip Details:
 - Travelers: ${travelers}
 - Budget Mode: ${mode.toUpperCase()} (${modeDescriptions[mode]})
 - Daily Budget (per person): ${modeBudgetRanges[mode]}
+
+**CRITICAL COST REQUIREMENTS:**
+- All costs MUST be in Indian Rupees (INR)
+- All costs should be TOTAL for ALL ${travelers} travelers combined, NOT per person
+- For BALANCED mode: Daily total (all travelers) should be ₹${2000 * travelers} - ₹${4000 * travelers}
+- Be realistic with Indian pricing - research typical costs if needed
+- Travel costs should reflect actual Indian domestic travel prices
+
+**GEOGRAPHIC CONSIDERATIONS:**
+- If ${to} or ${from} is an ISLAND (Andaman, Nicobar, Lakshadweep, Diu, Daman), ONLY provide Flight and Ship/Ferry options
+- Do NOT suggest train or bus for island destinations - they are geographically impossible
+- For Andaman/Nicobar: Ships sail 3-4 times per month from Chennai/Kolkata (50-60 hours journey)
+- For Lakshadweep: Only flights from Kochi are available
+- Island flights are typically more expensive (₹8,000-15,000 per person)
 
 Generate a JSON response with this EXACT structure (no markdown, just pure JSON):
 {
@@ -155,6 +177,10 @@ Make sure:
 13. DOMESTIC ONLY: This planner only supports travel within India. Ensure all suggested locations and routes are strictly within the borders of India.
 
 10. IMPORTANT: Calculate "estimatedTotalCost" and all daily/activity costs for ALL ${travelers} travelers collectively, NOT per person.
+    - Example for BALANCED mode with 4 travelers: Daily total should be ₹8,000-16,000 (₹2,000-4,000 per person × 4)
+    - Accommodation cost should be for ALL travelers (e.g., 2 rooms if 4 people)
+    - Meal costs should be total for all travelers
+    - Activity costs should be total entry fees for all travelers
 
 11. SCALE & STRUCTURE (Essential for ${numDays} days):
    - Days 1-3: Major landmarks and arrival atmosphere.
@@ -178,6 +204,7 @@ Return ONLY valid JSON, no additional text or markdown.`;
       model: "mistralai/mistral-7b-instruct",
       messages: [{ role: "user", content: prompt }],
     });
+    console.log(response, "::response::");
 
     function extractJSON(text: string) {
       // Remove markdown code blocks if present
@@ -194,6 +221,7 @@ Return ONLY valid JSON, no additional text or markdown.`;
 
     function recalculateTripCosts(tripPlan: any) {
       console.log("--- RECALCULATING COSTS (V2 - With Travel) ---");
+      console.log(`Mode: ${mode}, Travelers: ${travelers}`);
       let grandTotal = 0;
 
       if (tripPlan.days && Array.isArray(tripPlan.days)) {
@@ -234,7 +262,7 @@ Return ONLY valid JSON, no additional text or markdown.`;
 
       // Update trip summary total
       if (tripPlan.tripSummary) {
-        const symbol = tripPlan.tripSummary.currencySymbol || "$";
+        const symbol = tripPlan.tripSummary.currencySymbol || "₹";
         const travelCostVal = tripPlan.tripSummary.estimatedTravelCost;
         const travelCost =
           typeof travelCostVal === "number"
@@ -243,6 +271,10 @@ Return ONLY valid JSON, no additional text or markdown.`;
 
         // Add travel cost to grand total
         grandTotal += travelCost;
+
+        console.log(`Daily costs total: ₹${grandTotal - travelCost}`);
+        console.log(`Travel cost: ₹${travelCost}`);
+        console.log(`Grand total: ₹${grandTotal}`);
 
         tripPlan.tripSummary.estimatedTotalCost = `${symbol}${grandTotal}`;
         // Ensure the parsed number is stored back for consistency
@@ -286,6 +318,117 @@ function getCurrencyData(to: string) {
   return { code: "INR", symbol: "₹", rate: 83 };
 }
 
+function getTransportOptions(
+  from: string,
+  to: string,
+  mode: string,
+  travelers: number,
+  costMultiplier: number,
+) {
+  const isToIsland = isIslandDestination(to);
+  const isFromIsland = isIslandDestination(from);
+
+  // For island destinations
+  if (isToIsland || isFromIsland) {
+    const isAndaman =
+      to.toLowerCase().includes("andaman") ||
+      from.toLowerCase().includes("andaman");
+
+    return {
+      outbound: [
+        {
+          type: "Flight",
+          estimatedCost: Math.round(8000 * travelers * costMultiplier),
+          duration: "2-4 hours",
+          details: isAndaman
+            ? `Direct flight from ${from} to ${to} (Air India/IndiGo). Limited daily flights.`
+            : `Flight from ${from} to ${to}. Check availability.`,
+          recommended: true,
+        },
+        {
+          type: "Ship/Ferry",
+          estimatedCost: Math.round(4000 * travelers * costMultiplier),
+          duration: isAndaman ? "50-60 hours" : "Variable",
+          details: isAndaman
+            ? "Passenger ship from Chennai/Kolkata to Port Blair. Sails 3-4 times per month. Book in advance."
+            : "Check ferry availability and schedules.",
+          recommended: mode === "cheap",
+        },
+      ],
+      return: [
+        {
+          type: "Flight",
+          estimatedCost: Math.round(8000 * travelers * costMultiplier),
+          duration: "2-4 hours",
+          details: isAndaman
+            ? `Direct flight from ${to} to ${from} (Air India/IndiGo). Limited daily flights.`
+            : `Flight from ${to} to ${from}. Check availability.`,
+          recommended: true,
+        },
+        {
+          type: "Ship/Ferry",
+          estimatedCost: Math.round(4000 * travelers * costMultiplier),
+          duration: isAndaman ? "50-60 hours" : "Variable",
+          details: isAndaman
+            ? "Passenger ship from Port Blair to Chennai/Kolkata. Sails 3-4 times per month."
+            : "Check ferry availability and schedules.",
+          recommended: mode === "cheap",
+        },
+      ],
+    };
+  }
+
+  // For mainland destinations (existing logic)
+  return {
+    outbound: [
+      {
+        type: "Flight",
+        estimatedCost: Math.round(4500 * travelers * costMultiplier),
+        duration: "2-3 hours",
+        details: `Domestic flight from ${from} to ${to} (Indigo/Air India)`,
+        recommended: mode === "premium",
+      },
+      {
+        type: "Train",
+        estimatedCost: Math.round(1500 * travelers * costMultiplier),
+        duration: "14-22 hours",
+        details: "Express Train (Sleeper/3AC Class). Affordable and scenic.",
+        recommended: mode === "balanced",
+      },
+      {
+        type: "Bus",
+        estimatedCost: Math.round(800 * travelers * costMultiplier),
+        duration: "16-24 hours",
+        details: "Intercity AC Sleeper/Volvo Bus. Most budget-friendly.",
+        recommended: mode === "cheap",
+      },
+    ],
+    return: [
+      {
+        type: "Flight",
+        estimatedCost: Math.round(4500 * travelers * costMultiplier),
+        duration: "2-3 hours",
+        details: `Domestic flight from ${to} to ${from} (Indigo/Air India)`,
+        recommended: mode === "premium",
+      },
+      {
+        type: "Train",
+        estimatedCost: Math.round(1500 * travelers * costMultiplier),
+        duration: "14-22 hours",
+        details: "Express Train (Sleeper/3AC Class). Affordable and scenic.",
+        recommended: mode === "balanced",
+      },
+      {
+        type: "Bus",
+        estimatedCost: Math.round(800 * travelers * costMultiplier),
+        duration: "16-24 hours",
+        details: "Intercity AC Sleeper/Volvo Bus. Most budget-friendly.",
+        recommended: mode === "cheap",
+      },
+    ],
+  };
+}
+
 function generateFallbackPlan({
   from,
   to,
@@ -298,21 +441,29 @@ function generateFallbackPlan({
   const { code, symbol, rate } = getCurrencyData(to);
   const costMultiplier = mode === "premium" ? 4 : mode === "balanced" ? 2 : 1;
 
-  // Base costs per person in USD (Adjusted to be realistic)
+  // Base costs per person in INR (Realistic Indian pricing)
   const baseCosts = {
-    activity1: 15,
-    activity2: 20,
-    activity3: 15,
-    breakfast: 10,
-    lunch: 15,
-    dinner: 25,
-    accommodation: 40,
-    travel: 200, // Base travel cost estimate (Round Trip)
+    activity1: 200,
+    activity2: 300,
+    activity3: 200,
+    breakfast: 150,
+    lunch: 250,
+    dinner: 400,
+    accommodation: 1500, // Per room (2 people)
+    travel: 2000, // Base travel cost estimate per person (One way)
   };
 
-  // Convert to local currency and scale by multiplier
-  const calculateCost = (baseUsd: number) =>
-    Math.round(baseUsd * rate * costMultiplier * travelers);
+  // Calculate cost in INR with mode multiplier
+  // For accommodation: divide travelers by 2 (assume 2 per room)
+  const calculateCost = (baseInr: number, isAccommodation = false) => {
+    if (isAccommodation) {
+      // Accommodation: cost per room, assume 2 people per room
+      const rooms = Math.ceil(travelers / 2);
+      return Math.round(baseInr * costMultiplier * rooms);
+    }
+    // Other costs: total for all travelers
+    return Math.round(baseInr * costMultiplier * travelers);
+  };
 
   const days = [];
   const start = new Date(startDate);
@@ -330,7 +481,7 @@ function generateFallbackPlan({
       bkf: calculateCost(baseCosts.breakfast),
       lnch: calculateCost(baseCosts.lunch),
       dnr: calculateCost(baseCosts.dinner),
-      stay: calculateCost(baseCosts.accommodation),
+      stay: calculateCost(baseCosts.accommodation, true), // true = accommodation
     };
 
     const dailyTotal = Object.values(costs).reduce((a, b) => a + b, 0);
@@ -563,6 +714,14 @@ function generateFallbackPlan({
     });
   }
 
+  const transportOptions = getTransportOptions(
+    from,
+    to,
+    mode,
+    travelers,
+    costMultiplier,
+  );
+
   return {
     tripSummary: {
       from,
@@ -578,60 +737,18 @@ function generateFallbackPlan({
       currencySymbol: symbol,
     },
     route: {
-      overview: `Travel from ${from} to ${to} for an amazing ${numDays}-day adventure`,
+      overview: isIslandDestination(to)
+        ? `Travel from ${from} to ${to} (island destination) via ${transportOptions.outbound.find((o) => o.recommended)?.type || "flight"}`
+        : `Travel from ${from} to ${to} for an amazing ${numDays}-day adventure`,
       transportation:
-        mode === "premium" ? "Flight" : mode === "balanced" ? "Train" : "Bus",
-      travelOptions: [
-        {
-          type: "Flight",
-          estimatedCost: Math.round(4500 * rate * travelers),
-          duration: "2-3 hours",
-          details: `Domestic flight from ${from} to ${to} (Indigo/Air India)`,
-          recommended: mode === "premium",
-        },
-        {
-          type: "Train",
-          estimatedCost: Math.round(1500 * rate * travelers),
-          duration: "14-22 hours",
-          details: "Express Train (Sleeper/3AC Class). Affordable and scenic.",
-          recommended: mode === "balanced",
-        },
-        {
-          type: "Bus",
-          estimatedCost: Math.round(800 * rate * travelers),
-          duration: "16-24 hours",
-          details: "Intercity AC Sleeper/Volvo Bus. Most budget-friendly.",
-          recommended: mode === "cheap",
-        },
-      ],
+        transportOptions.outbound.find((o) => o.recommended)?.type || "Flight",
+      travelOptions: transportOptions.outbound,
     },
     returnRoute: {
       overview: `Return from ${to} to ${from}`,
       transportation:
-        mode === "premium" ? "Flight" : mode === "balanced" ? "Train" : "Bus",
-      travelOptions: [
-        {
-          type: "Flight",
-          estimatedCost: Math.round(4500 * rate * travelers),
-          duration: "2-3 hours",
-          details: `Domestic flight from ${to} to ${from} (Indigo/Air India)`,
-          recommended: mode === "premium",
-        },
-        {
-          type: "Train",
-          estimatedCost: Math.round(1500 * rate * travelers),
-          duration: "14-22 hours",
-          details: "Express Train (Sleeper/3AC Class). Affordable and scenic.",
-          recommended: mode === "balanced",
-        },
-        {
-          type: "Bus",
-          estimatedCost: Math.round(800 * rate * travelers),
-          duration: "16-24 hours",
-          details: "Intercity AC Sleeper/Volvo Bus. Most budget-friendly.",
-          recommended: mode === "cheap",
-        },
-      ],
+        transportOptions.return.find((o) => o.recommended)?.type || "Flight",
+      travelOptions: transportOptions.return,
     },
     days,
     packingTips: [
