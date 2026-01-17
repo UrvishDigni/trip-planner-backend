@@ -200,7 +200,6 @@ Return ONLY valid JSON, no additional text or markdown.`;
     });
 
     const response = await client.chat.completions.create({
-      // model: "meta-llama/llama-3.1-70b-instruct",
       model: "mistralai/mistral-7b-instruct",
       messages: [{ role: "user", content: prompt }],
     });
