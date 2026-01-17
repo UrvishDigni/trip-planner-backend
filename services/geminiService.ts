@@ -213,66 +213,121 @@ Return ONLY valid JSON, no additional text or markdown.`;
         cleanText = cleanText.replace(/\/\/.*$/gm, "");
         // Remove multi-line comments /* ... */
         cleanText = cleanText.replace(/\/\*[\s\S]*?\*\//g, "");
+
         // Find the first { and last }
         const start = cleanText.indexOf("{");
         const end = cleanText.lastIndexOf("}");
         if (start === -1 || end === -1)
           throw new Error("Invalid JSON from model - no braces found");
 
-        const jsonStr = cleanText.slice(start, end + 1);
+        let jsonStr = cleanText.slice(start, end + 1);
 
-        // Try to parse the JSON
+        // Try to parse the JSON directly first
         try {
           return JSON.parse(jsonStr);
         } catch (parseError: any) {
-          // Log the error position and surrounding context
-          console.error("JSON Parse Error:", parseError.message);
+          console.error("=== JSON Parse Error ===");
+          console.error("Error Message:", parseError.message);
 
           // Extract error position from error message
           const posMatch = parseError.message.match(/position (\d+)/);
           if (posMatch) {
             const errorPos = parseInt(posMatch[1]);
-            const contextStart = Math.max(0, errorPos - 100);
-            const contextEnd = Math.min(jsonStr.length, errorPos + 100);
-            console.error("Context around error position:");
+            const contextStart = Math.max(0, errorPos - 150);
+            const contextEnd = Math.min(jsonStr.length, errorPos + 150);
+            console.error("\nContext around error position:");
             console.error(jsonStr.substring(contextStart, contextEnd));
-            console.error(" ".repeat(errorPos - contextStart) + "^");
+            console.error(
+              " ".repeat(Math.min(150, errorPos - contextStart)) +
+                "^ ERROR HERE",
+            );
           }
 
-          // Try to fix common JSON issues
+          // Try multiple fixing strategies
           let fixedJson = jsonStr
             // Fix trailing commas before closing braces/brackets
             .replace(/,(\s*[}\]])/g, "$1")
-            // Fix missing commas between array elements or object properties
+            // Fix missing commas after nested objects (e.g., after } before whitespace and })
+            .replace(/}\s+}/g, "},\n}")
+            // Fix missing commas between object properties (string: value \n "nextKey")
+            .replace(/("\s*:\s*"[^"]*")\s*\n\s*"/g, '$1,\n"')
+            .replace(/("\s*:\s*\d+)\s*\n\s*"/g, '$1,\n"')
+            .replace(/("\s*:\s*(?:true|false|null))\s*\n\s*"/g, '$1,\n"')
+            // Fix missing commas between array elements
             .replace(/("\s*)\n(\s*")/g, "$1,\n$2")
-            .replace(/(\d+)\n(\s*")/g, "$1,\n$2")
-            .replace(/(true|false|null)\n(\s*")/g, "$1,\n$2")
-            .replace(/}\n(\s*{)/g, "},\n$1")
-            .replace(/]\n(\s*\[)/g, "],\n$1");
+            .replace(/(\d+)\s*\n(\s*")/g, "$1,\n$2")
+            .replace(/(true|false|null)\s*\n(\s*")/g, "$1,\n$2")
+            // Fix missing commas between objects in arrays
+            .replace(/}\s*\n(\s*{)/g, "},\n$1")
+            .replace(/]\s*\n(\s*\[)/g, "],\n$1")
+            // Fix missing commas after closing braces/brackets before quotes
+            .replace(/}\s*\n(\s*")/g, "},\n$1")
+            .replace(/]\s*\n(\s*")/g, "],\n$1")
+            // Fix specific pattern: } \n      } (missing comma after nested object)
+            .replace(/}\s*\n(\s{4,}})(?!\s*[,\]}])/g, "},\n$1");
 
           try {
-            return JSON.parse(fixedJson);
-          } catch (secondError) {
-            // If still failing, log the full JSON for debugging
-            console.error("Failed to parse JSON even after fixes");
-            console.error("Original JSON length:", jsonStr.length);
-            console.error("First 500 chars:", jsonStr.substring(0, 500));
+            const result = JSON.parse(fixedJson);
+            return result;
+          } catch (secondError: any) {
+            console.error("\n=== Failed to fix JSON ===");
+            console.error("Second parse error:", secondError.message);
+
+            // Count opening and closing braces/brackets
+            const openBraces = (fixedJson.match(/{/g) || []).length;
+            const closeBraces = (fixedJson.match(/}/g) || []).length;
+            const openBrackets = (fixedJson.match(/\[/g) || []).length;
+            const closeBrackets = (fixedJson.match(/]/g) || []).length;
+
+            let completedJson = fixedJson;
+
+            // If we're missing closing structures, try to complete them
+            if (openBraces > closeBraces || openBrackets > closeBrackets) {
+              // Add missing closing brackets for arrays
+              for (let i = 0; i < openBrackets - closeBrackets; i++) {
+                completedJson += "\n]";
+              }
+              // Add missing closing braces for objects
+              for (let i = 0; i < openBraces - closeBraces; i++) {
+                completedJson += "\n}";
+              }
+
+              try {
+                const completedResult = JSON.parse(completedJson);
+                return completedResult;
+              } catch (thirdError: any) {
+                console.error(
+                  "Still failed after completion:",
+                  thirdError.message,
+                );
+              }
+            }
+
+            console.error("\nJSON Stats:");
+            console.error("- Original length:", jsonStr.length);
+            console.error("- First 300 chars:", jsonStr.substring(0, 300));
             console.error(
-              "Last 500 chars:",
-              jsonStr.substring(jsonStr.length - 500),
+              "- Last 300 chars:",
+              jsonStr.substring(Math.max(0, jsonStr.length - 300)),
             );
+
+            // Save the problematic JSON to a file for debugging
+            const fs = require("fs");
+            const debugPath = "./debug_failed_json.txt";
+            fs.writeFileSync(debugPath, jsonStr, "utf-8");
+            console.error(`\n✗ Saved problematic JSON to: ${debugPath}`);
+
             throw new Error(`JSON parsing failed: ${parseError.message}`);
           }
         }
       } catch (error: any) {
-        console.error("Extract JSON Error:", error);
+        console.error("\n=== Extract JSON Error ===");
+        console.error(error.message);
         throw new Error(`Failed to extract valid JSON: ${error.message}`);
       }
     }
 
     function recalculateTripCosts(tripPlan: any) {
-      console.log("--- RECALCULATING COSTS (V2 - With Travel) ---");
-      console.log(`Mode: ${mode}, Travelers: ${travelers}`);
       let grandTotal = 0;
 
       if (tripPlan.days && Array.isArray(tripPlan.days)) {
@@ -345,16 +400,15 @@ Return ONLY valid JSON, no additional text or markdown.`;
     if (tripPlan.tripSummary) {
       tripPlan.tripSummary.travelers = travelers;
     }
-    console.log(tripPlan, "::tripPlan::");
     return tripPlan;
   } catch (error: any) {
-    console.error("=== Gemini API Error ===");
-    console.error("Error Type:", error.constructor.name);
-    console.error("Error Message:", error.message);
+    console.error("\n=== Gemini API Error ===");
+    console.error("Error Type:", error.constructor?.name || typeof error);
+    console.error("Error Message:", error.message || String(error));
     if (error.stack) {
       console.error("Stack Trace:", error.stack);
     }
-    console.error("Falling back to default plan generation...");
+    console.error("\n⚠️  Falling back to default plan generation...\n");
     return generateFallbackPlan({
       from,
       to,

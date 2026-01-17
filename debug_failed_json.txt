@@ -1,0 +1,261 @@
+{
+  "tripSummary": {
+    "from": "Surat, India",
+    "to": "Goa Velha, India",
+    "startDate": "2026-01-17",
+    "endDate": "2026-01-27",
+    "totalDays": 11,
+    "travelers": 4,
+    "mode": "balanced",
+    "estimatedTotalCost": "₹180,000",
+    "estimatedTravelCost": 10000,
+    "currency": "INR",
+    "currencySymbol": "₹"
+  },
+  "route": {
+    "overview": "Fly from Surat to Goa Velha for a quick and comfortable journey",
+    "transportation": "Flight",
+    "travelOptions": [
+      {
+        "type": "Flight",
+        "estimatedCost": 10000,
+        "duration": "2h 15m",
+        "details": "Direct flight from Surat (STV) to Goa Velha (GOI) on IndiGo Airlines",
+        "recommended": true
+      },
+      {
+        "type": "Train",
+        "estimatedCost": 4800,
+        "duration": "16h 00m",
+        "details": "Sleeper Class on 12951 Mumbai Rajdhani (Departs Surat at 07:00 AM)",
+        "recommended": false
+      },
+      {
+        "type": "Bus",
+        "estimatedCost": 3200,
+        "duration": "18h 30m",
+        "details": "VRL AC Volvo from Surat to Goa Velha",
+        "recommended": false
+      }
+    ]
+  },
+  "returnRoute": {
+    "overview": "Return to Surat via flight for a quick and convenient journey",
+    "transportation": "Flight",
+    "travelOptions": [
+      {
+        "type": "Flight",
+        "estimatedCost": 10000,
+        "duration": "2h 15m",
+        "details": "Direct flight from Goa Velha (GOI) to Surat (STV) on IndiGo Airlines",
+        "recommended": true
+      }
+    ]
+  },
+  "days": [
+    {
+      "day": 1,
+      "date": "2026-01-17",
+      "title": "Welcome to Goa Velha",
+      "activities": [
+        {
+          "time": "09:00 AM",
+          "activity": "Arrival and Check-in",
+          "description": "Arrive at Goa Velha Airport and check-in at the hotel",
+          "location": "Goa Velha",
+          "estimatedCost": 0,
+          "duration": "1 hour"
+        },
+        {
+          "time": "10:30 AM",
+          "activity": "Museum Visit",
+          "description": "Visit the Goa Velha Museum to learn about the region's history",
+          "location": "Goa Velha Museum",
+          "estimatedCost": 500,
+          "duration": "2 hours"
+        },
+        {
+          "time": "01:00 PM",
+          "activity": "Lunch",
+          "description": "Enjoy a traditional Goan meal at Ritz Classic",
+          "location": "Ritz Classic",
+          "estimatedCost": 2000,
+          "duration": "1 hour"
+        },
+        {
+          "time": "02:30 PM",
+          "activity": "Church Tour",
+          "description": "Visit the Basilica of Bom Jesus and Se Cathedral",
+          "location": "Basilica of Bom Jesus, Se Cathedral",
+          "estimatedCost": 300,
+          "duration": "2 hours"
+        },
+        {
+          "time": "05:00 PM",
+          "activity": "Beach Relaxation",
+          "description": "Relax at Colva Beach",
+          "location": "Colva Beach",
+          "estimatedCost": 0,
+          "duration": "2 hours"
+        },
+        {
+          "time": "07:00 PM",
+          "activity": "Dinner",
+          "description": "Dine at Thirsty Swallow for some delicious seafood",
+          "location": "Thirsty Swallow",
+          "estimatedCost": 2000,
+          "duration": "1 hour"
+        }
+      ],
+      "meals": {
+        "breakfast": { "place": "", "cuisine": "", "estimatedCost": 0 },
+        "lunch": { "place": "Ritz Classic", "cuisine": "Goan", "estimatedCost": 2000 },
+        "dinner": { "place": "Thirsty Swallow", "cuisine": "Seafood", "estimatedCost": 2000 }
+      },
+      "accommodation": {
+        "name": "Leela Goa",
+        "type": "Hotel",
+        "estimatedCost": 10000,
+        "location": "Majorova, Benaulim"
+      },
+      "dailyTotal": 19000
+    },
+    {
+      "day": 2,
+      "date": "2026-01-18",
+      "title": "Exploring Fontainhas",
+      "activities": [
+        {
+          "time": "09:00 AM",
+          "activity": "Breakfast",
+          "description": "Start the day with a delicious breakfast at Antares",
+          "location": "Antares",
+          "estimatedCost": 1000,
+          "duration": "1 hour"
+        },
+        {
+          "time": "10:00 AM",
+          "activity": "Fontainhas Walk",
+          "description": "Explore the colorful lanes of Fontainhas",
+          "location": "Fontainhas",
+          "estimatedCost": 0,
+          "duration": "2 hours"
+        },
+        {
+          "time": "12:00 PM",
+          "activity": "Lunch",
+          "description": "Enjoy a meal at Casa Sarita",
+          "location": "Casa Sarita",
+          "estimatedCost": 1500,
+          "duration": "1 hour"
+        },
+        {
+          "time": "01:30 PM",
+          "activity": "Art Galleries",
+          "description": "Visit the Goa Art Gallery and Gallery Gitanjali",
+          "location": "Goa Art Gallery, Gallery Gitanjali",
+          "estimatedCost": 500,
+          "duration": "2 hours"
+        },
+        {
+          "time": "04:00 PM",
+          "activity": "Beach Time",
+          "description": "Relax at Dona Paula Beach",
+          "location": "Dona Paula Beach",
+          "estimatedCost": 0,
+          "duration": "2 hours"
+        },
+        {
+          "time": "06:30 PM",
+          "activity": "Dinner",
+          "description": "Dine at Fisherman's Wharf for a variety of seafood options",
+          "location": "Fisherman's Wharf",
+          "estimatedCost": 2000,
+          "duration": "1 hour"
+        }
+      ],
+      "meals": {
+        "breakfast": { "place": "Antares", "cuisine": "Continental", "estimatedCost": 1000 },
+        "lunch": { "place": "Casa Sarita", "cuisine": "Goan", "estimatedCost": 1500 },
+        "dinner": { "place": "Fisherman's Wharf", "cuisine": "Seafood", "estimatedCost": 2000 }
+      },
+      "accommodation": {
+        "name": "Leela Goa",
+        "type": "Hotel",
+        "estimatedCost": 10000,
+        "location": "Majorova, Benaulim"
+      },
+      "dailyTotal": 14500
+    },
+    {
+      "day": 3,
+      "date": "2026-01-19",
+      "title": "Day Trip to Old Goa",
+      "activities": [
+        {
+          "time": "09:00 AM",
+          "activity": "Breakfast",
+          "description": "Start the day with a hearty breakfast at Gunpowder",
+          "location": "Gunpowder",
+          "estimatedCost": 1000,
+          "duration": "1 hour"
+        },
+        {
+          "time": "10:00 AM",
+          "activity": "Old Goa Tour",
+          "description": "Visit the Church of St. Francis of Assisi, Church of St. Augustine, and Archaeological Museum",
+          "location": "Old Goa",
+          "estimatedCost": 700,
+          "duration": "3 hours"
+        },
+        {
+          "time": "01:00 PM",
+          "activity": "Lunch",
+          "description": "Enjoy a meal at Ritz Classic",
+          "location": "Ritz Classic",
+          "estimatedCost": 2000,
+          "duration": "1 hour"
+        },
+        {
+          "time": "02:30 PM",
+          "activity": "Mangueshi Temple",
+          "description": "Visit the Mangueshi Temple",
+          "location": "Mangueshi Temple",
+          "estimatedCost": 500,
+          "duration": "1 hour"
+        },
+        {
+          "time": "04:00 PM",
+          "activity": "Beach Time",
+          "description": "Relax at Majorda Beach",
+          "location": "Majorda Beach",
+          "estimatedCost": 0,
+          "duration": "2 hours"
+        },
+        {
+          "time": "06:30 PM",
+          "activity": "Dinner",
+          "description": "Dine at Thirsty Swallow for some delicious seafood",
+          "location": "Thirsty Swallow",
+          "estimatedCost": 2000,
+          "duration": "1 hour"
+        }
+      ],
+      "meals": {
+        "breakfast": { "place": "Gunpowder", "cuisine": "South Indian", "estimatedCost": 1000 },
+        "lunch": { "place": "Ritz Classic", "cuisine": "Goan", "estimatedCost": 2000 },
+        "dinner": { "place": "Thirsty Swallow", "cuisine": "Seafood", "estimatedCost": 2000 }
+      },
+      "accommodation": {
+        "name": "Leela Goa",
+        "type": "Hotel",
+        "estimatedCost": 10000,
+        "location": "Majorova, Benaulim"
+      },
+      "dailyTotal": 15700
+    },
+    
+  ],
+  "packingTips": ["Pack light clothing, sunscreen, and comfortable shoes", "Bring a water bottle to stay hydrated", "Carry local currency (INR) for easy transactions"],
+  "localTips": ["Haggle at local markets for souvenirs", "Try local street food for an authentic experience", "Respect local customs and traditions"]
+}
