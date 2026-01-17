@@ -11,9 +11,10 @@ const PORT = process.env.BACKEND_PORT || 5000;
 // Middleware
 app.use(
   cors({
-    origin: "*",
+    origin: true, // Allow all origins dynamically
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   }),
 );
 app.use(express.json());
