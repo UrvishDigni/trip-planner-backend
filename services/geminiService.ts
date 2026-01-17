@@ -204,19 +204,70 @@ Return ONLY valid JSON, no additional text or markdown.`;
       model: "mistralai/mistral-7b-instruct",
       messages: [{ role: "user", content: prompt }],
     });
-    console.log(response, "::response::");
 
     function extractJSON(text: string) {
-      // Remove markdown code blocks if present
-      let cleanText = text.replace(/```json\n?|\n?```/g, "");
-      // Remove single line comments // ...
-      cleanText = cleanText.replace(/\/\/.*$/gm, "");
-      // Find the first { and last }
-      const start = cleanText.indexOf("{");
-      const end = cleanText.lastIndexOf("}");
-      if (start === -1 || end === -1)
-        throw new Error("Invalid JSON from model");
-      return JSON.parse(cleanText.slice(start, end + 1));
+      try {
+        // Remove markdown code blocks if present
+        let cleanText = text.replace(/```json\n?|\n?```/g, "");
+        // Remove single line comments // ...
+        cleanText = cleanText.replace(/\/\/.*$/gm, "");
+        // Remove multi-line comments /* ... */
+        cleanText = cleanText.replace(/\/\*[\s\S]*?\*\//g, "");
+        // Find the first { and last }
+        const start = cleanText.indexOf("{");
+        const end = cleanText.lastIndexOf("}");
+        if (start === -1 || end === -1)
+          throw new Error("Invalid JSON from model - no braces found");
+
+        const jsonStr = cleanText.slice(start, end + 1);
+
+        // Try to parse the JSON
+        try {
+          return JSON.parse(jsonStr);
+        } catch (parseError: any) {
+          // Log the error position and surrounding context
+          console.error("JSON Parse Error:", parseError.message);
+
+          // Extract error position from error message
+          const posMatch = parseError.message.match(/position (\d+)/);
+          if (posMatch) {
+            const errorPos = parseInt(posMatch[1]);
+            const contextStart = Math.max(0, errorPos - 100);
+            const contextEnd = Math.min(jsonStr.length, errorPos + 100);
+            console.error("Context around error position:");
+            console.error(jsonStr.substring(contextStart, contextEnd));
+            console.error(" ".repeat(errorPos - contextStart) + "^");
+          }
+
+          // Try to fix common JSON issues
+          let fixedJson = jsonStr
+            // Fix trailing commas before closing braces/brackets
+            .replace(/,(\s*[}\]])/g, "$1")
+            // Fix missing commas between array elements or object properties
+            .replace(/("\s*)\n(\s*")/g, "$1,\n$2")
+            .replace(/(\d+)\n(\s*")/g, "$1,\n$2")
+            .replace(/(true|false|null)\n(\s*")/g, "$1,\n$2")
+            .replace(/}\n(\s*{)/g, "},\n$1")
+            .replace(/]\n(\s*\[)/g, "],\n$1");
+
+          try {
+            return JSON.parse(fixedJson);
+          } catch (secondError) {
+            // If still failing, log the full JSON for debugging
+            console.error("Failed to parse JSON even after fixes");
+            console.error("Original JSON length:", jsonStr.length);
+            console.error("First 500 chars:", jsonStr.substring(0, 500));
+            console.error(
+              "Last 500 chars:",
+              jsonStr.substring(jsonStr.length - 500),
+            );
+            throw new Error(`JSON parsing failed: ${parseError.message}`);
+          }
+        }
+      } catch (error: any) {
+        console.error("Extract JSON Error:", error);
+        throw new Error(`Failed to extract valid JSON: ${error.message}`);
+      }
     }
 
     function recalculateTripCosts(tripPlan: any) {
@@ -296,8 +347,14 @@ Return ONLY valid JSON, no additional text or markdown.`;
     }
     console.log(tripPlan, "::tripPlan::");
     return tripPlan;
-  } catch (error) {
-    console.error("Gemini API Error:", error);
+  } catch (error: any) {
+    console.error("=== Gemini API Error ===");
+    console.error("Error Type:", error.constructor.name);
+    console.error("Error Message:", error.message);
+    if (error.stack) {
+      console.error("Stack Trace:", error.stack);
+    }
+    console.error("Falling back to default plan generation...");
     return generateFallbackPlan({
       from,
       to,
