@@ -272,10 +272,6 @@ Return ONLY valid JSON, no additional text or markdown.`;
         // Add travel cost to grand total
         grandTotal += travelCost;
 
-        console.log(`Daily costs total: ₹${grandTotal - travelCost}`);
-        console.log(`Travel cost: ₹${travelCost}`);
-        console.log(`Grand total: ₹${grandTotal}`);
-
         tripPlan.tripSummary.estimatedTotalCost = `${symbol}${grandTotal}`;
         // Ensure the parsed number is stored back for consistency
         tripPlan.tripSummary.estimatedTravelCost = travelCost;
